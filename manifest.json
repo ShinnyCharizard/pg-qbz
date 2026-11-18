@@ -1,0 +1,34 @@
+{
+  "id": "io.github.dovepants.qobuz",
+  "name": "Qobuz",
+  "version": "1.2.4",
+  "api_version": 1,
+  "kind": "source",
+  "runtime": "process",
+  "description": "Your Qobuz library, its home and its search, and its music at the best quality your output takes. It needs a Qobuz subscription.",
+  "icon": "icon.svg",
+  "capabilities": [
+    {
+      "type": "network",
+      "domains": [
+        "www.qobuz.com",
+        "qobuz-qobuz-prod.web.arc-cdn.net",
+        "play.qobuz.com",
+        "streaming-qobuz-std.akamaized.net",
+        "static.qobuz.com",
+        "d12eggcejhfkay.cloudfront.net"
+      ]
+    },
+    {
+      "type": "register_source"
+    },
+    {
+      "type": "register_panel"
+    },
+    {
+      "type": "own_account",
+      "keyring": false
+    }
+  ],
+  "author": "ShinnyCharizard"
+}

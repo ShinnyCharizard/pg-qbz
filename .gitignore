@@ -1,0 +1,9 @@
+/target/
+/dist/
+/private/
+.env
+.env.*
+.venv/
+/account.json
+/reports.json
+__pycache__/

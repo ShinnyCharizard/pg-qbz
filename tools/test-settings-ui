@@ -1,0 +1,19 @@
+#!/usr/bin/env python3
+"""Check credential masking against caller-supplied host components."""
+import argparse
+import os
+from pathlib import Path
+import subprocess
+import sys
+import tempfile
+
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument('host', type=Path)
+parser.add_argument('--patterns-url', required=True)
+args = parser.parse_args()
+fixture = Path(__file__).resolve().parents[1] / 'tests/qml/tst_credentials.qml'
+with tempfile.TemporaryDirectory(prefix='source-plugin-ui-') as folder:
+    test = Path(folder) / 'tst_credentials.qml'
+    test.write_text(fixture.read_text().replace('@HOST_PATTERNS@', args.patterns_url))
+    environment = dict(os.environ, QT_QPA_PLATFORM='offscreen')
+    raise SystemExit(subprocess.call([sys.executable, str(args.host.resolve() / 'scripts/test-qml.py'), str(test)], env=environment))
