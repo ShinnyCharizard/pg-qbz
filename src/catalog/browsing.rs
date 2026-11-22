@@ -22,6 +22,38 @@ fn spotlight_artist(artists: &[Value]) -> Option<u64> {
   artists.iter().find_map(|artist| artist["ref"].as_str()?.strip_prefix("artist:")?.parse().ok())
 }
 impl CatalogService {
+  pub(crate) async fn genre_discovery(&self, request: &Value) -> RpcResult {
+    let name = request["filters"]["genre"].as_str().map(str::trim)
+      .filter(|name| !name.is_empty() && name.len() <= 1024)
+      .ok_or_else(|| RpcFault::invalid("genre name"))?;
+    let limit = request["limit"].as_u64().unwrap_or(60).clamp(1, 60) as u32;
+    self.require_session().await?;
+    let genres = self.memoized("genres", std::time::Duration::from_secs(86400), || async {
+      Ok(serialized(self.session.api.get_genres(None).await?))
+    }).await?;
+    let folded = name.to_lowercase();
+    let id = genres.as_array().into_iter().flatten().find(|genre| genre["name"].as_str()
+      .is_some_and(|name| name.trim().to_lowercase() == folded)).and_then(|genre| genre["id"].as_u64());
+    let Some(id) = id else { return Ok(json!({"shelves":[]})); };
+    let read = |endpoint| async move { self.session.api.get_discover_albums(endpoint, Some(vec![id]), 0, limit).await };
+    let (new, featured) = tokio::join!(read("/discover/newReleases"), read("/discover/mostStreamed"));
+    let (new, featured) = match (new, featured) {
+      (Err(error), Err(_)) => return Err(error.into()),
+      (new, featured) => (new.ok(), featured.ok()),
+    };
+    let mut shelves = Vec::new();
+    if let Some(new) = &new {
+      let rows = new.items.iter().map(|row| items::album_card(&serialized(row))).collect();
+      shelves.push(shelf("new_releases", "New releases", "album", rows, None));
+    }
+    let mut seen = std::collections::HashSet::new();
+    let artists = featured.iter().chain(new.iter()).flat_map(|page| &page.items)
+      .flat_map(|album| &album.artists).filter(|artist| artist.id != 0 && seen.insert(artist.id))
+      .take(limit as usize).map(|artist| items::artist_card(&serialized(artist))).collect();
+    shelves.push(shelf("artists", "Artists", "artist", artists, None));
+    Ok(json!({"shelves":shelves}))
+  }
+
   pub(crate) async fn load_discovery(&self, parts: &[&str]) -> RpcResult {
     let tab = parts.get(1).copied().unwrap_or("home");
     if !matches!(tab, "home" | "editors" | "foryou") {

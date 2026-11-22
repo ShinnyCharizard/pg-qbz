@@ -105,6 +105,9 @@ impl Runtime {
       "page.action" => catalog.dispatch_action(request).await,
       "page.get" => {
         let reference = request["ref"].as_str().unwrap_or_default();
+        if reference == "genre-discovery" {
+          return catalog.genre_discovery(&request).await;
+        }
         if reference.starts_with("library:") {
           return catalog
             .library
@@ -167,7 +170,7 @@ impl Runtime {
       }
     });
     let mut reply = json!({"protocol":1,"capabilities":{"auth":"browser","home":true,
-      "library":["albums","tracks","artists","playlists","labels"],"pages":true,
+      "library":["albums","tracks","artists","playlists","labels"],"pages":true,"genre_discovery":1,
       "playlist_edit":true,"search":true,"scene_search_limit":1000,"resolve":true,
       "favorites":true,"playback_events":1,"track_lyrics":1}});
     let spanish = self.session.language().as_deref() == Some("es");

@@ -1,7 +1,7 @@
 {
   "id": "io.github.dovepants.qobuz",
   "name": "Qobuz",
-  "version": "1.2.4",
+  "version": "1.2.5",
   "api_version": 1,
   "kind": "source",
   "runtime": "process",
